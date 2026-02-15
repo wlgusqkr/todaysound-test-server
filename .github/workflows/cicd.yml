@@ -58,15 +58,31 @@ jobs:
       - name: Get Terraform Outputs
         run: |
           # Get workspace ID
-          WORKSPACE_ID=$(curl -s \
+          WORKSPACE_RESPONSE=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.TFC_TOKEN }}" \
-            "https://app.terraform.io/api/v2/organizations/todaysound/workspaces/terraform-aws-tfc-workflow" \
-            | jq -r '.data.id')
+            "https://app.terraform.io/api/v2/organizations/todaysound/workspaces/terraform-infra")
+
+          WORKSPACE_ID=$(echo "$WORKSPACE_RESPONSE" | jq -r '.data.id')
+          echo "Workspace ID: $WORKSPACE_ID"
+
+          if [ "$WORKSPACE_ID" = "null" ] || [ -z "$WORKSPACE_ID" ]; then
+            echo "Failed to get workspace ID"
+            echo "$WORKSPACE_RESPONSE" | jq .
+            exit 1
+          fi
 
           # Get outputs from current state
           OUTPUTS=$(curl -s \
             -H "Authorization: Bearer ${{ secrets.TFC_TOKEN }}" \
             "https://app.terraform.io/api/v2/workspaces/${WORKSPACE_ID}/current-state-version?include=outputs")
+
+          if echo "$OUTPUTS" | jq -e '.included' > /dev/null 2>&1; then
+            echo "Outputs fetched successfully"
+          else
+            echo "Failed to get outputs - Terraform may not have been applied yet"
+            echo "$OUTPUTS" | jq .
+            exit 1
+          fi
 
           # Extract values
           get_output() {
@@ -76,7 +92,7 @@ jobs:
           echo "EC2_HOST=$(get_output main_server_ip)" >> $GITHUB_ENV
           echo "RDS_ADDRESS=$(get_output rds_address)" >> $GITHUB_ENV
           echo "S3_BUCKET=$(get_output s3_bucket_name)" >> $GITHUB_ENV
-          echo "S3_LOGS_BUCKET=$(get_output s3_log1s_bucket_name)" >> $GITHUB_ENV
+          echo "S3_LOGS_BUCKET=$(get_output s3_logs_bucket_name)" >> $GITHUB_ENV
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
