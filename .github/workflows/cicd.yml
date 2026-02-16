@@ -118,17 +118,15 @@ jobs:
             cd ~/app
 
             # Write app environment variables
-            cat > .env << ENVEOF
-SPRING_PROFILES_ACTIVE=prod
-DB_URL=${DB_URL}
-DB_USERNAME=${DB_USERNAME}
-DB_PASSWORD=${DB_PASSWORD}
-S3_BUCKET=${S3_BUCKET}
-S3_LOGS_BUCKET=${S3_LOGS_BUCKET}
-FCM_JSON=${FCM_JSON}
-SENTRY_DSN=${SENTRY_DSN}
-SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
-ENVEOF
+            echo "SPRING_PROFILES_ACTIVE=prod" > .env
+            echo "DB_URL=${DB_URL}" >> .env
+            echo "DB_USERNAME=${DB_USERNAME}" >> .env
+            echo "DB_PASSWORD=${DB_PASSWORD}" >> .env
+            echo "S3_BUCKET=${S3_BUCKET}" >> .env
+            echo "S3_LOGS_BUCKET=${S3_LOGS_BUCKET}" >> .env
+            echo "FCM_JSON=${FCM_JSON}" >> .env
+            echo "SENTRY_DSN=${SENTRY_DSN}" >> .env
+            echo "SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}" >> .env
 
             # Pull new image and restart app only
             docker compose pull app
